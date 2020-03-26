@@ -1,8 +1,7 @@
 cmake_minimum_required(VERSION 3.0.0)
 project(WordCounter VERSION 0.1.0 LANGUAGES CXX) 
-
-include(CTest)
-enable_testing()
+SET (CMAKE_C_COMPILER_WORKS 1)
+SET (CMAKE_CXX_COMPILER_WORKS 1)
 
 add_executable(WordCounter main.cpp)
 
