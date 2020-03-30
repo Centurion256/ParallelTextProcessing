@@ -10,7 +10,7 @@ int readFiles(std::string path)
 	for (const auto& dirEntry : recursive_directory_iterator(path))
 		if (dirEntry.path().extension() == ".zip") {
 			std::cout << dirEntry << std::endl;
-			std::ifstream raw_file(dirEntry, std::ios::binary);
+			std::fstream raw_file(dirEntry.path(), std::ios::binary);
 			auto buffer = static_cast<std::ostringstream&>(
 				std::ostringstream{} << raw_file.rdbuf()).str();
 		}
