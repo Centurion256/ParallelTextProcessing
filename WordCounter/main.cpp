@@ -1,6 +1,9 @@
 #include <iostream>
+#include"recursiveDirs.hpp";
 
 int main(int, char**) {
-    std::cout << "Hello, world!\n";
-    return 0;
+	std::string path = "../test";
+	readFiles(path);	
+	std::cout << "Hello, world!\n";
+	return 0;
 }
