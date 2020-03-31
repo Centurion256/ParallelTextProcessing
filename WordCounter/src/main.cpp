@@ -6,7 +6,7 @@
 #define LIMIT 10000
 // #include <any>
 
-void print_smth(int x, std::mutex& m)
+void print_smth(int x, std::mutex &m)
 {
     for (int i = 0; i < LIMIT; i++)
     {
@@ -15,17 +15,18 @@ void print_smth(int x, std::mutex& m)
     }
 }
 
-int main(int, char**) {
-    
+int main(int, char **)
+{
+
     std::mutex m1;
     std::thread t1{print_smth, 2, std::ref(m1)};
     std::thread t2{print_smth, 100, std::ref(m1)};
     {
         std::lock_guard<std::mutex> lg{m1};
-        std::string path = "../test";
-        readFiles(path);	
+        std::string path = "../../data";
+        readFiles(path);
     }
-	std::cout << "Hello, world!\n";
+    std::cout << "Hello, world!\n";
     for (int i = 0; i < LIMIT; i++)
     {
         std::lock_guard<std::mutex> lg{m1};
@@ -33,6 +34,8 @@ int main(int, char**) {
     }
     t1.join();
     t2.join();
-    return 0;
 
+    std::string path = "../../data/";
+    readFiles(path);
+    return 0;
 }
