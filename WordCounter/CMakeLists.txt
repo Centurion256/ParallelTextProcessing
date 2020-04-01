@@ -10,6 +10,11 @@ set(LIBRARY_DIR "${CMAKE_SOURCE_DIR}/lib")
 find_package(Threads REQUIRED)
 include_directories("${CMAKE_SOURCE_DIR}/inc")
 add_library(file_lib SHARED "${CMAKE_SOURCE_DIR}/inc/recursiveDirs.hpp" "${LIBRARY_DIR}/recursiveDirs.cpp")
+set_target_properties(file_lib
+    PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin"
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin"
+)
 
 add_subdirectory("${CMAKE_SOURCE_DIR}/import")
 add_executable(WordCounter "${CMAKE_SOURCE_DIR}/src/main.cpp")
