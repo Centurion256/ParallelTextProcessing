@@ -5,3 +5,7 @@ FetchContent_Declare(
   GIT_TAG        v3.4.0
 )
 FetchContent_MakeAvailable(archlib)
+
+set_target_properties(archive PROPERTIES
+IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/build/_deps/archlib-build/bin/libarchive.dll" 
+) 

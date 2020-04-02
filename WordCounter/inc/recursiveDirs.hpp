@@ -1,4 +1,9 @@
+#ifndef RECURSIVE_DIRS_LIB
+#define RECURSIVE_DIRS_LIB
+
 #include <iostream>
 #include <filesystem>
+#include <string>
 
-int readFiles(std::string path);
+std::string readFiles(std::string path);
+#endif
