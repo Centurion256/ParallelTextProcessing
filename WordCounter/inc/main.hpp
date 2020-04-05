@@ -1,0 +1,4 @@
+#ifndef WORD_COUNTER_MAIN
+#define WORD_COUNTER_MAIN
+
+#endif

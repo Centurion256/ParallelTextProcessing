@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <memory>
 #include <thread>
 #include <mutex>
 //#include <functional>
@@ -9,80 +10,116 @@
 #include "recursiveDirs.hpp"
 #include "queue.hpp"
 #include <vector>
+#include <map>
 
 #define LIMIT 10000
 // #include <any>
+int parse_file(std::map<std::string, int>& words, std::string* file);
 
-void print_smth(int x, std::mutex &m)
-{
-    for (int i = 0; i < LIMIT; i++)
-    {
-        std::lock_guard<std::mutex> lg{m};
-        std::cout << "hello from a thread!, num =" << x << std::endl;
-    }
-}
 
 template <class T>
-void print_stuff(TSQueue<T> &q)
+void print_stuff(TSQueue<T*> &q, std::mutex& m)
 {
-    T front;
+    // T&& front;
     while (true)
-    {
-        front = q.pop();
-        if (front == "This is the end, you know? Lady the plans we got went all wrong..")
+    {   
+        auto front = q.pop();
+        if (front == nullptr)
         {
+            q.push(front);
             break;
         }
-        std::cout << "The item in the queue is: " << front << std::endl;
+        // std::unique_ptr<T> str_ptr{front};
+        {
+            std::unique_lock<std::mutex> lg{m};
+            std::cout << "The item in the queue is: " << *front << std::endl;
+        }
+        delete front;
+
     }
 }
 
 template <class T>
-void push_stuff(TSQueue<T> &q, std::vector<T> vls)
+void push_stuff(TSQueue<T*> &q, std::vector<T> vls)
 {
-    for (auto &val : vls)
-        q.push(val);
+    for (auto val : vls){
+        auto file_str = new std::string{val};
+        q.push(file_str);
+    }
+    q.push(nullptr);
 
-    q.push("This is the end, you know? Lady the plans we got went all wrong..");
 }
+
+template <class T, class N>
+void indexer(TSQueue<T*> &from, TSQueue<N*> &to)
+{
+    auto words = new std::map<std::string, int>{};
+    std::string* text_ptr;
+    while (true)
+    {
+        text_ptr = from.pop();
+        if(text_ptr == nullptr){
+            break;
+        }
+        try{
+            parse_file(words, text_ptr);
+            delete text_ptr;
+
+        }
+        catch(const std::exception& e){
+            delete text_ptr;
+            throw e;
+        }
+
+    }
+    to.push(words);
+}
+
+template <class T>
+void merger(TSQueue<T*> &q)
+{
+    while (true)
+    {
+        auto map_ptr_pair = q.pop_two();
+        if((map_ptr_pair.first == nullptr)){
+            q.push(map_ptr_pair.second);
+            break;
+        }
+        else if((map_ptr_pair.second == nullptr)){
+            q.push(map_ptr_pair.first);
+            break;
+        }
+        (*map_ptr_pair.first).merge(*map_ptr_pair.second);
+        
+    }
+
+}
+template <class T>
+void thread_dispatcher(TSQueue<T*> &text_q, TSQueue<T*> &merge_q)
+{
+
+    while (true){
+        
+    }
+
+}
+
 
 int main(int, char **)
 {
-    // std::mutex m1;
-    // std::thread t1{print_smth, 2, std::ref(m1)};
-    // std::thread t2{print_smth, 100, std::ref(m1)};
-    // std::lock_guard<std::mutex> lg{m1};
 
     std::string path = "data";
     std::cout << "hello, world!" << std::endl;
-    // readFiles(path);
-    TSQueue<std::string> queue;
-    queue.push(std::string{"5"});
-    queue.push(std::string{"4"});
-    std::cout << queue.pop() << " " << queue.pop() << std::endl;
+    TSQueue<std::string*> queue;
+
 
     std::vector<std::thread> threads;
-    threads.emplace_back(print_stuff<std::string>, std::ref(queue));
+    std::mutex m;
+    threads.emplace_back(print_stuff<std::string>, std::ref(queue), std::ref(m));
+    threads.emplace_back(print_stuff<std::string>, std::ref(queue), std::ref(m));
     std::vector<std::string> vls = {"a", "b", "c", "d", "e", "f"};
     threads.emplace_back(push_stuff<std::string>, std::ref(queue), vls);
-
-    // while (threads.length() != 0)
-    // {
-    //     for (auto thread : threads)
-    //     {
-    //         if thread.joinable(){
-    //             thread.join;
-    //         }
-    //     }
-    // }
-
-    // for (int = 0; i < threads.length(); (++i) %= 2)
-    // {
-    //     if
-    //         threads.get(i).joinable()
-
-    // }
-    for (auto &t : threads)
+    for (auto& t : threads)
     {
         t.join();
     }

@@ -7,5 +7,6 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(archlib)
 
 set_target_properties(archive PROPERTIES
-IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/build/_deps/archlib-build/bin/libarchive.dll" 
+IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/build/_deps/archlib-build/bin/libarchive${CMAKE_SHARED_LIBRARY_SUFFIX}" 
 ) 
+
