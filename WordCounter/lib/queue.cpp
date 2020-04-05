@@ -69,10 +69,11 @@
 // template class TSQueue<std::string>;
 // template class TSQueue<int>;
 //--------------------------------ATTEMPT 1 END------------------
-template <class T>
-TSQueue<T>::TSQueue(){
+// template <class T>
+// TSQueue<T>::TSQueue() = default;
 
-};
+template <class T>
+TSQueue<T>::TSQueue(std::mutex& m) : dispatch_mutex_m(m){};
 
 template <class T>
 size_t TSQueue<T>::size()
@@ -88,7 +89,9 @@ T TSQueue<T>::pop()
     push_pop_balance_m -= 1;
     if (push_pop_balance_m <= LOWER_BOUND)
     {
-        dispatch_notifier_m()
+        push_pop_balance_m = 0;
+        std::unique_lock<std::mutex> ntf{dispatch_mutex_m};
+        dispatch_notifier_m.notify_one();
     }
     cv_m.wait(lg, [this]() { return queue_m.size() >= 1; });
     T value = queue_m.front();
@@ -100,7 +103,13 @@ template <class T>
 std::pair<T, T> TSQueue<T>::pop_two()
 {
     std::unique_lock<std::mutex> lg{m_m};
-    push_pop_balance -= 2;
+    push_pop_balance_m -= 2;
+    if (push_pop_balance_m <= LOWER_BOUND)
+    {
+        push_pop_balance_m = 0;
+        std::unique_lock<std::mutex> ntf{dispatch_mutex_m};
+        dispatch_notifier_m.notify_one();
+    }
     cv_m.wait(lg, [this]() { return queue_m.size() >= 2; });
     T value1 = queue_m.front();
     queue_m.pop_front();
@@ -114,7 +123,13 @@ template <class T>
 void TSQueue<T>::push(T value)
 {   
     std::unique_lock<std::mutex> lg{m_m};
-    push_pop_balance += 1;
+    push_pop_balance_m += 1;
+    if (push_pop_balance_m >= LOWER_BOUND)
+    {
+        push_pop_balance_m = 0;
+        std::unique_lock<std::mutex> ntf{dispatch_mutex_m};
+        dispatch_notifier_m.notify_one();
+    }
     queue_m.push_back(value);
     cv_m.notify_one();
 };

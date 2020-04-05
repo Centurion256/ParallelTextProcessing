@@ -14,7 +14,7 @@
 
 #define LIMIT 10000
 // #include <any>
-int parse_file(std::map<std::string, int>& words, std::string* file);
+int parse_file(std::map<std::string, int>* words, std::string* file);
 
 
 template <class T>
@@ -95,11 +95,32 @@ void merger(TSQueue<T*> &q)
 
 }
 template <class T>
-void thread_dispatcher(TSQueue<T*> &text_q, TSQueue<T*> &merge_q)
+void thread_dispatcher(TSQueue<T*> &text_q, TSQueue<T*> &map_q, std::mutex& m, std::vector<std::thread>& threads)
 {
-
+    std::condition_variable cv;
     while (true){
-        
+        std::unique_lock<std::mutex> mtx{m};
+        cv.wait(mtx);
+        if (text_q.push_pop_balance_m <= text_q.LOWER_BOUND)
+        {
+            text_q.push_pop_balance_m = 0;
+            threads.emplace_back(indexer, std::ref(text_q), std::ref(map_q));
+        }
+        if (text_q.push_pop_balance_m >= text_q.UPPER_BOUND)
+        {
+            text_q.push_pop_balance_m = 0;
+            text_q.push(nullptr);
+        }
+        if (map_q.push_pop_balance_m <= map_q.LOWER_BOUND)
+        {
+            map_q.push_pop_balance_m = 0;
+            threads.emplace_back(merger, std::ref(map_q));
+        }
+        if (map_q.push_pop_balance_m >= map_q.UPPER_BOUND)
+        {
+            map_q.push_pop_balance_m = 0;
+            map_q.push(nullptr);
+        }
     }
 
 }
@@ -110,7 +131,8 @@ int main(int, char **)
 
     std::string path = "data";
     std::cout << "hello, world!" << std::endl;
-    TSQueue<std::string*> queue;
+    std::mutex dispatcher_m;
+    TSQueue<std::string*> queue(std::ref(dispatcher_m));
 
 
     std::vector<std::thread> threads;
