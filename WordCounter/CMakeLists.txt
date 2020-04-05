@@ -22,6 +22,19 @@ set_target_properties(queue_lib
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin"
 )
 
+add_library(words_lib SHARED "${CMAKE_SOURCE_DIR}/inc/words.hpp" "${LIBRARY_DIR}/words.cpp")
+set_target_properties(words_lib
+    PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin"
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin"
+)
+
+find_package(Boost REQUIRED)
+set(Boost_USE_STATIC_LIBS        ON)  # only find static libs
+set(Boost_USE_DEBUG_LIBS         OFF) # ignore debug libs and
+set(Boost_USE_RELEASE_LIBS       ON)  # only find release libs
+include_directories(${Boost_INCLUDE_DIRS})
+
 find_package(LibArchive)
 IF (NOT LibArchive_FOUND)
 # IF (UNIX)
@@ -40,4 +53,4 @@ RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin"
 )
 target_link_libraries(file_lib LibArchive)
 
-target_link_libraries(WordCounter Threads::Threads file_lib queue_lib LibArchive)
+target_link_libraries(WordCounter Threads::Threads file_lib queue_lib words_lib LibArchive ${Boost_LIBRARIES})
