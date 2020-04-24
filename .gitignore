@@ -10,3 +10,13 @@ out
 test
 CMakeSettings.json
 bin
+WordCounter/vtune/**
+WordCounter/*
+WordCounter/
+WordCounter
+WordCounter/**
+WordCounter/inc/**
+WordCounterThreadPool/vtune/**
+WordCounterThreadPool/a_old.txt
+WordCounterThreadPool/out.txt
+WordCounterThreadPool/out/**
