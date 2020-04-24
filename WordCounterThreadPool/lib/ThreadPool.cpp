@@ -34,6 +34,7 @@ void ThreadPool<T>::work(){
             }
             current_task = tasks.front();
             tasks.pop_front();
+            overflow_cv.notify_one();
         }
         current_task();
     }
@@ -41,12 +42,13 @@ void ThreadPool<T>::work(){
 };
 
 template <class T>
-void ThreadPool<T>::add_task(std::function<void()> task)
+void ThreadPool<T>::add_task(std::function<void()> task, bool overflow_secure)
 {
     {
-        std::unique_lock<std::mutex> lg{m};
-        if (boundary > 0)
-            cv.wait(lg, [this]{return this->tasks.size() < boundary;});
+        std::unique_lock<std::mutex> ulk{m};
+        // std::cout<<this->tasks.size()<<std::endl;
+        if (overflow_secure && boundary > 0)
+            cv.wait(ulk, [this]{return tasks.size() < boundary;});
         tasks.push_back(task);
     }
     cv.notify_one();

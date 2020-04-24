@@ -16,6 +16,7 @@ const std::string ARCHIVE_EXTENSIONS{".zip"};
 // New
 void worker_read(ThreadPool<std::map<std::string, int>*>& pool, std::string path, std::promise<int>&& res){
     // std::cout<<"Started reading..."<<std::endl;
+    int num = 0;
     using recursive_directory_iterator = std::filesystem::recursive_directory_iterator;
     for (const auto &dirEntry : recursive_directory_iterator(path))
     {
@@ -45,14 +46,21 @@ void worker_read(ThreadPool<std::map<std::string, int>*>& pool, std::string path
             file_str = new std::string{buffer_ss.str()};
         }
 
+        // while(pool.num_tasks()>pool.boundary){}
+
         if(is_archive){
-            pool.add_task(std::bind(worker_extract, std::ref(pool), file_str));
+            pool.add_task(std::bind(worker_extract, std::ref(pool), file_str), true);
         }
         if(is_text){
-            pool.add_task(std::bind(worker_index, std::ref(pool), file_str));
+            pool.add_task(std::bind(worker_index, std::ref(pool), file_str), true);
         }
 
         // std::cout << "Finished reading " <<dirEntry << std::endl; 
+        num+=1;
+        if(num%100==0){
+            std::cout<<"Read "<<num<<" files"<<std::endl;
+        }
+
     }
     res.set_value(0);
 }
@@ -98,11 +106,12 @@ void worker_extract(ThreadPool<std::map<std::string, int>*>& pool, std::string* 
                     
                 };
 
-
                 pool.add_task(std::bind(worker_index, std::ref(pool), d_buffer));
             }
+            // archive_entry_free(entry);
         }
         // std::cout << "Finished reading file." << std::endl;
+        archive_read_close(a);
         archive_read_free(a);
         delete file_str;
     }
