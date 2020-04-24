@@ -48,7 +48,7 @@ void ThreadPool<T>::add_task(std::function<void()> task, bool overflow_secure)
         std::unique_lock<std::mutex> ulk{m};
         // std::cout<<this->tasks.size()<<std::endl;
         if (overflow_secure && boundary > 0)
-            cv.wait(ulk, [this]{return tasks.size() < boundary;});
+            cv.wait(ulk, [this]{return tasks.size() < (boundary >> 2);});
         tasks.push_back(task);
     }
     cv.notify_one();

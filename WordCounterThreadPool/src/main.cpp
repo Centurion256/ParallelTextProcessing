@@ -10,7 +10,7 @@
 
 #include <archive.h>
 #include <archive_entry.h>
-
+#include <boost/algorithm/string.hpp>
 // // #include "workers.hpp"
 // #include "words.hpp"
 #include "configs.hpp"
@@ -46,10 +46,9 @@ inline long long to_ms(const D& d)
 int main(int argc, char *argv[])
 {
     config conf;
-    std::cout<<(argc>=2?argv[1]:"example.conf")<<std::endl;
     try
     {
-        if (read_configs(conf, (argc>=2?argv[1]:"example.conf")))
+        if (read_configs(conf, (argc >= 2 ? boost::trim_copy(std::string{argv[1]}) : "example.conf")))
         {
             throw std::runtime_error{"Error reading configs"};
         }

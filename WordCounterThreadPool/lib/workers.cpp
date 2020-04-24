@@ -56,9 +56,9 @@ void worker_read(ThreadPool<std::map<std::string, int>*>& pool, std::string path
         }
 
         // std::cout << "Finished reading " <<dirEntry << std::endl; 
-        num+=1;
-        if(num%100==0){
-            std::cout<<"Read "<<num<<" files"<<std::endl;
+        num += 1;
+        if(num % 100 == 0){
+            std::cout<<"Read "<< num <<" files" << std::endl;
         }
 
     }
@@ -108,10 +108,10 @@ void worker_extract(ThreadPool<std::map<std::string, int>*>& pool, std::string* 
 
                 pool.add_task(std::bind(worker_index, std::ref(pool), d_buffer));
             }
-            // archive_entry_free(entry);
+            archive_entry_clear(entry);
         }
+        archive_entry_clear(entry);
         // std::cout << "Finished reading file." << std::endl;
-        archive_read_close(a);
         archive_read_free(a);
         delete file_str;
     }
