@@ -9,6 +9,7 @@
 
 #include "workers.hpp"
 
+thread_local std::locale loc = boost::locale::generator().generate("");
 
 const std::string PLAIN_TEXT_EXTENSIONS{".txt"};
 const std::string ARCHIVE_EXTENSIONS{".zip"};

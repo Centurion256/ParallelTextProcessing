@@ -12,8 +12,6 @@
 template <class T>
 ThreadPool<T>::ThreadPool(int nthread, size_t boundary) : boundary(boundary)
 {
-    // gen.locale_cache_enabled(true);
-    // gen("");
     for (size_t i = 0; i < nthread; i++)
     {
         workers.emplace_back(&ThreadPool::work, this);
@@ -23,10 +21,10 @@ ThreadPool<T>::ThreadPool(int nthread, size_t boundary) : boundary(boundary)
 
 template <class T>
 void ThreadPool<T>::work(){
-    {
-        std::lock_guard<std::mutex> lg{m};
-        loc=gen("");
-    }
+    // {
+    //     std::lock_guard<std::mutex> lg{m};
+    //     loc=gen("");
+    // }
     while(true)
     {
         std::function<void()> current_task;
@@ -53,7 +51,7 @@ void ThreadPool<T>::add_task(std::function<void()> task, bool overflow_secure)
     {
         std::unique_lock<std::mutex> ulk{m};
         // std::cout<<this->tasks.size()<<std::endl;
-        if (overflow_secure && boundary > 0)
+        if (overflow_secure && boundary > 0 && boundary <= tasks.size())
             cv.wait(ulk, [this]{return tasks.size() < (boundary >> 2);});
         tasks.push_back(task);
     }
