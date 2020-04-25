@@ -60,6 +60,9 @@ int main(int argc, char *argv[])
     }
     // std::cout << "Instantiated config" << std::endl;
     
+    // boost::locale::generator gen;
+    // gen.locale_cache_enabled(true);
+    // gen("");
 
     ThreadPool<std::map<std::string, int>*> pool(conf.max_threads, conf.boundary);
     std::promise<int> res_promise;
@@ -97,6 +100,7 @@ int main(int argc, char *argv[])
         ++next_it;
         pool.res->erase((*it).first);
     }
+    delete pool.res;
     outfile.close();
     outfile.open(conf.out_N_path);
     std::sort(sorted.begin(), sorted.end(), [](const std::pair<std::string, int> p1, const std::pair<std::string, int> p2)->bool{return (p1.second > p2.second) || 
@@ -109,6 +113,6 @@ int main(int argc, char *argv[])
         ++next_it;
     }
     outfile.close();
-
+    sorted.clear();
     return 0;
 }

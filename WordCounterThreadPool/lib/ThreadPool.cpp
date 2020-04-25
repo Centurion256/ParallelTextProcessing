@@ -12,6 +12,8 @@
 template <class T>
 ThreadPool<T>::ThreadPool(int nthread, size_t boundary) : boundary(boundary)
 {
+    // gen.locale_cache_enabled(true);
+    // gen("");
     for (size_t i = 0; i < nthread; i++)
     {
         workers.emplace_back(&ThreadPool::work, this);
@@ -21,6 +23,10 @@ ThreadPool<T>::ThreadPool(int nthread, size_t boundary) : boundary(boundary)
 
 template <class T>
 void ThreadPool<T>::work(){
+    {
+        std::lock_guard<std::mutex> lg{m};
+        loc=gen("");
+    }
     while(true)
     {
         std::function<void()> current_task;

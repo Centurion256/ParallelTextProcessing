@@ -72,7 +72,7 @@ void worker_extract(ThreadPool<std::map<std::string, int>*>& pool, std::string* 
         // std::cout<<"Started extracting..."<<std::endl;
         ssize_t size = 0;
         struct archive *a = archive_read_new();
-        struct archive_entry *entry = archive_entry_new();
+        struct archive_entry *entry;
         archive_read_support_filter_all(a);
         archive_read_support_format_all(a);
 
@@ -129,12 +129,10 @@ void worker_index(ThreadPool<std::map<std::string, int>*>& pool, std::string* fi
     // std::cout<<"Started indexing..."<<std::endl;
     try{
         using namespace boost::locale::boundary;
-        boost::locale::generator gen;
-        std::locale loc = gen("");
-        
-        std::map<std::string, int>* words_count = new std::map<std::string, int>();
 
-        ssegment_index words_list(word, file_str->begin(), file_str->end(),loc);
+        std::map<std::string, int>* words_count = new std::map<std::string, int>();
+        // thread_local std::locale loc = pool.gen("");
+        ssegment_index words_list(word, file_str->begin(), file_str->end(), loc);
         // std::cout<<"Error in index\n";
         words_list.rule(word_letters);
         std::string key;
@@ -143,12 +141,14 @@ void worker_index(ThreadPool<std::map<std::string, int>*>& pool, std::string* fi
         // for (auto elem:words_list)
         {
 
-            key = boost::locale::fold_case(boost::locale::normalize((*it).str(), boost::locale::norm_type::norm_default, loc), loc);
+            key = boost::locale::fold_case(boost::locale::normalize((*it).str(), boost::locale::norm_type::norm_default, std::ref(loc)), std::ref(loc));
             // std::cout<<"Derefer iter is "<<key<<"\n";
             ++(*words_count)[key];
+            // ++(words_count)[key];
         }
         delete file_str;
         // std::cout<<"Finished indexing"<<std::endl;
+        // std::map<std::string, int>* words_count_ptr = &words_count;
         pool.merge_res([&pool](std::map<std::string, int>* first, std::map<std::string, int>* second){worker_merge(pool, first, second);}, words_count);
     }
     catch(const std::exception& err){
@@ -172,7 +172,7 @@ void worker_merge(ThreadPool<std::map<std::string, int>*>& pool, std::map<std::s
         delete second;
         // pool.merge_res(std::bind(worker_merge, std::ref(pool)), second);
 
-        pool.merge_res([&pool](std::map<std::string, int>* first, std::map<std::string, int>* second){worker_merge(pool, first, second);}, first);
+        pool.merge_res([&pool](std::map<std::string, int>* first, std::map<std::string, int>* second){worker_merge(pool, first, second);}, std::move(first));
 
     }
     catch(const std::exception& err){

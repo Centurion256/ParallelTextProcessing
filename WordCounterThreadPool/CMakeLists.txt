@@ -29,10 +29,11 @@ set_target_properties(thread_pool_lib
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin"
 )
 
-find_package(Boost 1.71.0 COMPONENTS locale REQUIRED)
+find_package(Boost 1.66.0 COMPONENTS locale REQUIRED)
 set(Boost_USE_STATIC_LIBS        ON)  # only find static libs
 set(Boost_USE_DEBUG_LIBS         OFF) # ignore debug libs and
 set(Boost_USE_RELEASE_LIBS       ON)  # only find release libs
+set(Boost_USE_MULTITHREADED       ON)  # use multithreaded
 message("----------The include directories are: ${Boost_INCLUDE_DIRS}----------")
 include_directories("${Boost_INCLUDE_DIRS}/boost/locale")
 include_directories("${Boost_INCLUDE_DIRS}/boost/algorithm")
@@ -53,8 +54,12 @@ set_target_properties(WordCounter
 PROPERTIES
 RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin"
 )
+IF (UNIX)
+target_link_libraries(worker_lib archive thread_pool_lib Boost::locale)
+ELSEIF (WIN32)
 target_link_libraries(worker_lib LibArchive thread_pool_lib Boost::locale)
+ENDIF()
 # target_link_libraries(words_lib Boost::locale)
 message("${Boost_LIBRARIES}")
-target_link_libraries(WordCounter Threads::Threads LibArchive Boost::locale thread_pool_lib worker_lib)
+target_link_libraries(WordCounter Threads::Threads thread_pool_lib worker_lib)
 # words_lib queue_lib
