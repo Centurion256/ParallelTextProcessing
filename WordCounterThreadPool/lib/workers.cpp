@@ -109,9 +109,10 @@ void worker_extract(ThreadPool<std::map<std::string, int>*>& pool, std::string* 
 
                 pool.add_task(std::bind(worker_index, std::ref(pool), d_buffer));
             }
-            archive_entry_clear(entry);
+            // archive_entry_clear(entry);
         }
-        archive_entry_clear(entry);
+        // archive_entry_clear(entry);
+        archive_entry_free(entry);
         // std::cout << "Finished reading file." << std::endl;
         archive_read_free(a);
         delete file_str;
@@ -146,8 +147,11 @@ void worker_index(ThreadPool<std::map<std::string, int>*>& pool, std::string* fi
             // std::cout<<"Derefer iter is "<<key<<"\n";
             ++(*words_count)[key];
             // ++(words_count)[key];
+            // delete &key;
         }
+        key.clear();
         delete file_str;
+        // delete &words_list;
         // std::cout<<"Finished indexing"<<std::endl;
         // std::map<std::string, int>* words_count_ptr = &words_count;
         pool.merge_res([&pool](std::map<std::string, int>* first, std::map<std::string, int>* second){worker_merge(pool, first, second);}, words_count);
@@ -173,7 +177,7 @@ void worker_merge(ThreadPool<std::map<std::string, int>*>& pool, std::map<std::s
         delete second;
         // pool.merge_res(std::bind(worker_merge, std::ref(pool)), second);
 
-        pool.merge_res([&pool](std::map<std::string, int>* first, std::map<std::string, int>* second){worker_merge(pool, first, second);}, std::move(first));
+        pool.merge_res([&pool](std::map<std::string, int>* first, std::map<std::string, int>* second){worker_merge(pool, first, second);}, first);
 
     }
     catch(const std::exception& err){

@@ -113,6 +113,6 @@ int main(int argc, char *argv[])
         ++next_it;
     }
     outfile.close();
-    sorted.clear();
+    // sorted.clear();
     return 0;
 }
