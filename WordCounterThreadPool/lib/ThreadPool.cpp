@@ -21,10 +21,6 @@ ThreadPool<T>::ThreadPool(int nthread, size_t boundary) : boundary(boundary)
 
 template <class T>
 void ThreadPool<T>::work(){
-    // {
-    //     std::lock_guard<std::mutex> lg{m};
-    //     loc=gen("");
-    // }
     while(true)
     {
         std::function<void()> current_task;

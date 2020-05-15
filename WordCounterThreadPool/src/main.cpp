@@ -6,13 +6,10 @@
 #include <mutex>
 #include <future>
 #include <string>
-//#include <functional>
 
 #include <archive.h>
 #include <archive_entry.h>
 #include <boost/algorithm/string.hpp>
-// // #include "workers.hpp"
-// #include "words.hpp"
 #include "configs.hpp"
 #include "ThreadPool.hpp"
 #include "workers.hpp"
@@ -58,11 +55,6 @@ int main(int argc, char *argv[])
         std::cerr << e.what() << std::endl;
         return 1;
     }
-    // std::cout << "Instantiated config" << std::endl;
-    
-    // boost::locale::generator gen;
-    // gen.locale_cache_enabled(true);
-    // gen("");
 
     ThreadPool<std::map<std::string, int>*> pool(conf.max_threads, conf.boundary);
     std::promise<int> res_promise;
@@ -74,7 +66,6 @@ int main(int argc, char *argv[])
     
     if (res_future.get() != OK)// Wait till reader finishes reading
     {
-        // std::cout << "ERRROR!!!!111111" << std::endl;
         return 1;
     };
     pool.finish();
@@ -113,6 +104,6 @@ int main(int argc, char *argv[])
         ++next_it;
     }
     outfile.close();
-    sorted.clear();
+    // sorted.clear();
     return 0;
 }

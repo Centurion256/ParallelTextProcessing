@@ -9,7 +9,6 @@
 #include <condition_variable>
 #include <boost/locale.hpp>
 
-// thread_local std::locale loc;
 
 template <class T>
 class ThreadPool{
@@ -19,9 +18,6 @@ public:
     void finish();
     void merge_res(std::function<void(T, T)> merger, T new_res);
     T res;
-    // boost::locale::generator gen;
-    // thread_local static std::locale loc;
-    
 
 
 

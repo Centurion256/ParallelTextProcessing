@@ -17,8 +17,6 @@
 
 #include "ThreadPool.hpp"
 
-// template <class T>
-// static void readFiles(TSQueue<T *> &q, std::string path);
 void worker_read(ThreadPool<std::map<std::string, int>*>& pool, std::string path, std::promise<int>&& res);
 void worker_extract(ThreadPool<std::map<std::string, int>*>& pool, std::string* file_str);
 void worker_index(ThreadPool<std::map<std::string, int>*>& pool, std::string* file_str);

@@ -89,11 +89,16 @@ void merger(TSQueue<T*> &q)
             q.push(map_ptr_pair.first);
             break;
         }
-        (*map_ptr_pair.first).merge(*map_ptr_pair.second);
-        
+        for(auto& elem: *map_ptr_pair.second){
+            (*map_ptr_pair.first)[elem.first]+=elem.second;
+        }
+        delete map_ptr_pair.second;
+        q.push(map_ptr_pair.first);
     }
 
+
 }
+
 template <class T>
 void thread_dispatcher(TSQueue<T*> &text_q, TSQueue<T*> &map_q, std::mutex& m, std::vector<std::thread>& threads)
 {

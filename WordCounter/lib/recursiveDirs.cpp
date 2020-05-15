@@ -20,7 +20,7 @@ std::string readFiles(std::string path)
             ssize_t size = 0;
 
             struct archive *a = archive_read_new();
-            struct archive_entry *entry = archive_entry_new();
+            struct archive_entry *entry;
             archive_read_support_filter_all(a);
             archive_read_support_format_all(a);
             // char buf_c[101];
@@ -45,8 +45,9 @@ std::string readFiles(std::string path)
                 if(archive_read_data(a, &decoded_buffer[0], decoded_buffer.size())!=ARCHIVE_OK){};
                 std::cout<<decoded_buffer;
                 buffer+=decoded_buffer;
+                archive_entry_clear(entry);
             }
-            
+            archive_entry_clear(entry);
             archive_read_free(a);
                 
             

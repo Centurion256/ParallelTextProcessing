@@ -20,3 +20,7 @@ WordCounterThreadPool/vtune/**
 WordCounterThreadPool/a_old.txt
 WordCounterThreadPool/out.txt
 WordCounterThreadPool/out/**
+WordCounterThreadPool/out - Copy/b.txt
+WordCounterThreadPool/out - Copy/a.txt
+WordCounterThreadPool/result.zip
+result_by_name.txt

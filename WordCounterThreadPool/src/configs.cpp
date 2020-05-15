@@ -5,13 +5,12 @@
 #include <filesystem>
 #include <thread>
 #include <boost/algorithm/string.hpp>
-// #include <boost/algorithm/trim.hpp>
 #include "configs.hpp"
 
 int read_configs(config &configs, std::string path)
 {
     try {
-        // boost::format("hello, %d" %d);
+
         std::ifstream file{path};
         if (!file)
         {
