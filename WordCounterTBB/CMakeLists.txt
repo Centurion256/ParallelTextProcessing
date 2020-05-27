@@ -9,11 +9,10 @@ set(LIBRARY_DIR "${CMAKE_SOURCE_DIR}/lib")
 find_package(Threads REQUIRED)
 include_directories("${CMAKE_SOURCE_DIR}/inc")
 
-add_library(worker_lib SHARED "${CMAKE_SOURCE_DIR}/inc/workers.hpp" "${LIBRARY_DIR}/workers.cpp")
-set_target_properties(worker_lib    PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin"
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin"
-)
+# set_target_properties(worker_lib    PROPERTIES
+#     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin"
+#     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin"
+# )
 
 find_package(Boost 1.66.0 COMPONENTS locale REQUIRED)
 set(Boost_USE_STATIC_LIBS        ON)  # only find static libs
@@ -34,33 +33,39 @@ IF (NOT LibArchive_FOUND)
 #     find_package(LibArchive REQUIRED)
 ENDIF()
 
-find_package(TBB)
+find_package(TBB COMPONENTS tbb)
 IF (NOT TBB_FOUND)
-    message("Intel-TBB not found in PATH. Installing a local copy of Intel-TBB...")
-    include("cmake/TBBGet.cmake")
-    tbb_get(TBB_ROOT tbb_root_dir CONFIG_DIR tbb_config)
-    set(TBB_FIND_RELEASE_ONLY TRUE)
-    find_package(TBB REQUIRED tbb)
+    IF(MINGW)
+        message("Intel-TBB not found in PATH. Currently, automatic installation of TBB on a MinGW system is not supported.
+        Please consider using a different compiler or install TBB for MinGW manually. 
+        For Msys2 intallation of MinGW, open the MSYS2 shell and run pacman -S mingw64/mingw-w64-x86_64-intel-tbb")
+    ELSE()
+        message("Intel-TBB not found in PATH. Installing a local copy of Intel-TBB...")
+        include("cmake/TBBGet.cmake")
+        tbb_get(TBB_ROOT tbb_root CONFIG_DIR TBB_DIR)
+        set(TBB_FIND_RELEASE_ONLY TRUE)
+        find_package(TBB REQUIRED tbb)
+    ENDIF()
     # add_subdirectory("${CMAKE_SOURCE_DIR}/import/tbb")
 ENDIF()
 
-add_executable(WordCounter "${CMAKE_SOURCE_DIR}/src/main.cpp" "${CMAKE_SOURCE_DIR}/src/configs.cpp")
+add_executable(WordCounter "${CMAKE_SOURCE_DIR}/src/main.cpp")
 set_target_properties(WordCounter
 PROPERTIES
 RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin"
 )
 
 #REDUNDANT
-IF (UNIX)
-target_link_libraries(worker_lib archive Boost::locale)
-ELSEIF (WIN32)
-target_link_libraries(worker_lib LibArchive Boost::locale)
-ENDIF()
+# IF (UNIX)
+# target_link_libraries(worker_lib archive Boost::locale)
+# ELSEIF (WIN32)
+# target_link_libraries(worker_lib LibArchive Boost::locale)
+# ENDIF()
 # target_link_libraries(words_lib Boost::locale)
 message("${Boost_LIBRARIES}")
 IF (UNIX)
-target_link_libraries(WordCounter Threads::Threads LibArchive TBB::tbb)
+target_link_libraries(WordCounter Threads::Threads LibArchive Boost::locale TBB)
 ELSEIF (WIN32)
-target_link_libraries(WordCounter Threads::Threads libarchive TBB::tbb)
+target_link_libraries(WordCounter Threads::Threads libarchive Boost::locale TBB)
 ENDIF()
 # words_lib queue_lib

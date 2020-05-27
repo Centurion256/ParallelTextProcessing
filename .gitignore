@@ -24,3 +24,4 @@ WordCounterThreadPool/out - Copy/b.txt
 WordCounterThreadPool/out - Copy/a.txt
 WordCounterThreadPool/result.zip
 result_by_name.txt
+WordCounterTBB/output.txt
