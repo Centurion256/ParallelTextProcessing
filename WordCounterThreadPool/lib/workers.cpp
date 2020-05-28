@@ -112,7 +112,7 @@ void worker_extract(ThreadPool<std::map<std::string, int>*>& pool, std::string* 
             // archive_entry_clear(entry);
         }
         // archive_entry_clear(entry);
-        archive_entry_free(entry);
+        // archive_entry_free(entry);
         // std::cout << "Finished reading file." << std::endl;
         archive_read_free(a);
         delete file_str;
