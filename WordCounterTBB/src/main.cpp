@@ -13,8 +13,24 @@
 #include "archive.h"
 #include "archive_entry.h"
 // #include<
+#include <chrono>
+#include <thread>
 
 #define N 10
+
+inline std::chrono::high_resolution_clock::time_point get_current_time_fenced()
+{
+    std::atomic_thread_fence(std::memory_order_seq_cst);
+    auto res_time = std::chrono::high_resolution_clock::now();
+    std::atomic_thread_fence(std::memory_order_seq_cst);
+    return res_time;
+}
+
+template <class D>
+inline long long to_ms(const D &d)
+{
+    return std::chrono::duration_cast<std::chrono::milliseconds>(d).count();
+}
 
 // void fn()
 // {
@@ -54,14 +70,13 @@ const std::string ARCHIVE_EXTENSIONS{".zip"};
 class FilterRead
 {
 private:
-
-    std::filesystem::recursive_directory_iterator* entry;
-    std::filesystem::recursive_directory_iterator* end;
+    std::filesystem::recursive_directory_iterator *entry;
+    std::filesystem::recursive_directory_iterator *end;
     // std::filesystem::recursive_directory_iterator dir_iterator;
     // std::filesystem::recursive_directory_iterator cur_entry;
 
 public:
-    FilterRead(std::filesystem::recursive_directory_iterator* direntry, std::filesystem::recursive_directory_iterator* end) : entry{direntry}, end{end}
+    FilterRead(std::filesystem::recursive_directory_iterator *direntry, std::filesystem::recursive_directory_iterator *end) : entry{direntry}, end{end}
     {
         // cur_entry = iter();
         // dir_iterator = std::filesystem::recursive_directory_iterator(path);
@@ -72,8 +87,8 @@ public:
     {
         // std::cout << "Call guard begin" << std::endl;
         // auto cur_entry = iter();
-        std::cout << (*entry == *end) <<" "<< std::endl;
-        if (*end == *entry) 
+        // std::cout << (*entry == *end) << " " << std::endl;
+        if (*end == *entry)
         {
             fc.stop();
             return MarkedString{nullptr, 0};
@@ -90,8 +105,9 @@ public:
         auto dirEntry = *(*entry)++;
         // cur_entry++;
 
-        std::cout << dirEntry.path() << std::endl;
-        if (dirEntry.path().extension().empty()) {
+        // std::cout << dirEntry.path() << std::endl;
+        if (dirEntry.path().extension().empty())
+        {
             // return FilterRead::operator()(fc); // To skip dirs
             return MarkedString{nullptr, 0};
         }
@@ -122,8 +138,8 @@ public:
 
 class ArchiveForwardFilter
 {
-// private:
-//     std::vector<std::string *> files;
+    // private:
+    //     std::vector<std::string *> files;
 
 public:
     ArchiveForwardFilter() = default;
@@ -133,15 +149,13 @@ public:
         std::vector<std::string *> files{};
         if (file_str.str == nullptr)
         {
-            std::cout << "nullptr" << std::endl;
+            // std::cout << "nullptr" << std::endl;
             return files;
         }
         // std::cout << *(file_str.str) << std::endl;
-        std::cout << "Not nullptr" << std::endl;
         if (!file_str.is_archive)
         {
             files.push_back(file_str.str);
-            std::cout << "Processed a non-archive file." << std::endl; 
             return files;
         }
 
@@ -153,7 +167,7 @@ public:
             struct archive_entry *entry;
             archive_read_support_filter_all(a);
             archive_read_support_format_all(a);
-            std::cout << "Starting to read into memory" << std::endl;
+
             if (archive_read_open_memory(a, file_str.str->c_str(), file_str.str->size()) != ARCHIVE_OK)
             {
                 // std::cout << "Failed reading the archive from memory" << std::endl;
@@ -193,7 +207,7 @@ public:
             // archive_entry_free(entry);
             // std::cout << "Finished reading file." << std::endl;
             delete file_str.str;
-            std::cout << "unarchived files" << std::endl;
+            // std::cout << "unarchived files" << std::endl;
         }
         catch (const std::exception &err)
         {
@@ -201,7 +215,7 @@ public:
             delete file_str.str;
             throw err;
         }
-        std::cout << "Processed an achive file." << std::endl; 
+        // std::cout << "Processed an achive file." << std::endl;
         return files;
     }
 };
@@ -215,7 +229,7 @@ public:
         std::map<std::string, size_t> *words_count = new std::map<std::string, size_t>();
         try
         {
-            for (auto& file_str : vect)
+            for (auto &file_str : vect)
             {
                 using namespace boost::locale::boundary;
                 ssegment_index words_list(word, file_str->begin(), file_str->end(), loc);
@@ -234,7 +248,6 @@ public:
             std::cout << err.what();
             throw err;
         }
-        std::cout << "Finished indexing all files" << std::endl;
         return words_count;
     }
 };
@@ -242,23 +255,68 @@ public:
 class OutputFilter
 {
 private:
-    // std::vector<std::map<std::string, int> *> *out_maps;
-    std::function<void(std::map<std::string, size_t>*)> exofunctor_closure;
+    std::vector<std::map<std::string, size_t> *> *out;
+    // std::function<void(std::map<std::string, size_t> *)> exofunctor_closure;
 
 public:
-    OutputFilter(const std::function<void(std::map<std::string, size_t>*)>& out) : exofunctor_closure{std::cref(out)}
+    OutputFilter(std::vector<std::map<std::string, size_t> *> *out) : out{out}
     {
     }
+
     void operator()(std::map<std::string, size_t> *m) const
     {
         if (!m->empty())
         {
-            exofunctor_closure(m);
+            // exofunctor_closure(m);
+            out->push_back(m);
         }
-        else {
+        else
+        {
             std::cout << "Empty map." << std::endl;
         }
         // out_maps->push_back(m);
+    }
+};
+
+class Reducer
+{
+    // float *my_res;
+    std::vector<std::map<std::string, size_t> *> local_vector;
+
+public:
+    std::map<std::string, size_t> *res;
+
+    Reducer(std::vector<std::map<std::string, size_t> *> v) : local_vector(v)
+    {
+        res = new std::map<std::string, size_t>{};
+    }
+
+    void operator()(const tbb::blocked_range<size_t> &r)
+    {
+        for (size_t i = r.begin(); i != r.end(); ++i)
+            for (auto &elem : *(local_vector[i]))
+            {
+                (*res)[elem.first] += elem.second;
+                // delete elem.first;
+            }
+    }
+
+    Reducer(Reducer &reducer, tbb::split) : local_vector(reducer.local_vector)
+    {
+        res = new std::map<std::string, size_t>{};
+    }
+
+    void join(const Reducer &other)
+    {
+        for (auto &elem : *other.res)
+        {
+            (*res)[elem.first] += elem.second;
+        }
+    }
+
+    ~Reducer()
+    {
+        delete res;
     }
 };
 
@@ -304,7 +362,9 @@ int read_configs(config &configs, std::string path = "example.conf")
     }
 }
 
-int main(int argc, char const *argv[])
+// --------------------------------------------------------------------------------------------------------------------------------
+
+int test_main(int argc, char const *argv[])
 {
     config configs;
     if (argc >= 2)
@@ -323,26 +383,172 @@ int main(int argc, char const *argv[])
     {
         read_configs(configs);
     }
-    std::cout << configs.out_A_path << configs.out_N_path << configs.boundary << configs.data_path << std::endl;
-    // tbb::parallel_invoke(std::function<void()>{fn}, std::function<void()>{fn});
 
-    // tbb::parallel_for(tbb::blocked_range<size_t>(0, N), [=](tbb::blocked_range<size_t> &r) { std::cout << "Hello, " << i << std::endl; });
-    // tbb::parallel_for(0, N, 1, [](int i) { std::cout << "Index " << i << "\n"; });
-    // // tbb::();
-    // // for (int i : std::range(0,N))
+    std::map<std::string, size_t> map1{};
+    map1["abc"] = 2;
+    map1["de"] = 3;
+
+    std::map<std::string, size_t> map2{};
+    map2["abc"] = 1;
+    map2["deg"] = 5;
+
+    std::vector<std::map<std::string, size_t> *> res_vector{&map1, &map2};
+
+    for (int i = 0; i < 12; i++)
+    {
+        auto m = new std::map<std::string, size_t>{};
+        (*m)["a"] = 2;
+        res_vector.push_back(m);
+    }
+
+    // auto res = tbb::parallel_reduce(
+    //     tbb::blocked_range<size_t>(0, res_vector.size()),
+    //     new std::map<std::string, size_t>,
+
+    //     [&](tbb::blocked_range<size_t> &r, std::map<std::string, size_t> *cur_res) {
+    //         for (size_t i = r.begin(); i != r.end(); i++)
+    //         {
+    //             for (auto &elem : *(res_vector[i]))
+    //             {
+    //                 (*cur_res)[elem.first] += elem.second;
+    //                 // delete elem.first;
+    //             }
+    //             // delete res_vector[i];
+    //         }
+    //         return cur_res;
+    //     },
+
+    //     [&](std::map<std::string, size_t> *first, std::map<std::string, size_t> *second) {
+    //         std::cout<<(first==second)<<std::endl;
+    //         for (auto &elem : *first)
+    //         {
+    //             (*second)[elem.first] += elem.second;
+    //         }
+    //         // delete first;
+    //         return second;
+    //     });
+    std::cout << "Pipeline done." << std::endl;
+
+    std::cout << res_vector.size() << std::endl;
+    for (auto &i : res_vector)
+    {
+        std::cout << i << " ";
+    }
+
+    std::cout << "\n\n";
+
+    // auto res = tbb::parallel_reduce(
+    //     tbb::blocked_range<size_t>(0, res_vector.size()),
+    //     new std::map<std::string, size_t>,
+
+    //     [&](tbb::blocked_range<size_t> &r, std::map<std::string, size_t> *cur_res) {
+    //         for (size_t i = r.begin(); i != r.end(); i++)
+    //         {
+    //             for (auto &elem : *(res_vector[i]))
+    //             {
+    //                 std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+
+    //                 (*cur_res)[elem.first] += elem.second;
+    //                 // delete elem.first;
+    //             }
+    //             // delete res_vector[i];
+    //         }
+    //         return cur_res;
+    //     },
+
+    //     [&](std::map<std::string, size_t> *first, std::map<std::string, size_t> *second) {
+    //         std::cout << (first == second) << std::endl;
+    //         for (auto &elem : *first)
+    //         {
+    //             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+
+    //             (*second)[elem.first] += elem.second;
+    //         }
+    //         // delete first;
+    //         return second;
+    //     });
+
+    Reducer rd(res_vector);
+    tbb::parallel_reduce(tbb::blocked_range<size_t>(0, res_vector.size()), rd);
+    auto res = rd.res;
+
+    if (!std::filesystem::exists(configs.out_A_path.parent_path()))
+    {
+        std::filesystem::create_directory(configs.out_A_path.parent_path());
+    }
+
+    std::cout << "---Should have finished parallel_reduce---" << std::endl;
+
+    std::ofstream outfile;
+    std::vector<std::pair<std::string, size_t>> sorted;
+
+    outfile.open(configs.out_A_path);
+
+    for (auto it = res->begin(), next_it = it; it != res->end(); it = next_it)
+    {
+        outfile << (*it).first << ": " << (*it).second << std::endl;
+        sorted.push_back((*it));
+        ++next_it;
+        res->erase((*it).first);
+    }
+    // delete res;
+    outfile.close();
+    outfile.open(configs.out_N_path);
+    std::sort(sorted.begin(), sorted.end(), [](const std::pair<std::string, size_t> p1, const std::pair<std::string, size_t> p2) -> bool {
+        return (p1.second > p2.second) ||
+               ((p1.second == p2.second) &&
+                (p1.first < p2.first));
+    });
+    for (auto it = sorted.begin(), next_it = it; it != sorted.end(); it = next_it)
+    {
+        outfile << (*it).first << ": " << (*it).second << std::endl;
+        ++next_it;
+    }
+    outfile.close();
+
+    return 0;
+}
+
+// --------------------------------------------------------------------------------------------------------------------------------
+
+int main(int argc, char const *argv[])
+{
+    // return test_main(argc, argv);
+
+    config configs;
+    if (argc >= 2)
+    {
+        if (argc == 2)
+        {
+            read_configs(configs, argv[1]);
+        }
+        else
+        {
+            std::cout << "Error in program arguments\n";
+            return 1;
+        }
+    }
+    else
+    {
+        read_configs(configs);
+    }
+
+    // std::cout << configs.out_A_path << configs.out_N_path << configs.boundary << configs.data_path << std::endl;
+
+    auto start_time = get_current_time_fenced();
 
     int NTOKEN = 100; //TEMP
 
-    std::vector<std::map<std::string, size_t>*> res_vector;
+    std::vector<std::map<std::string, size_t> *> res_vector;
 
     std::filesystem::recursive_directory_iterator fls;
     fls = std::filesystem::recursive_directory_iterator{configs.data_path};
     auto file_end = std::filesystem::end(fls);
 
-    auto dictconcat_functor = [&](std::map<std::string, size_t>* dict){
-        std::cout << "the length is:" << res_vector.size() << std::endl;
-        res_vector.push_back(dict);
-    };
+    // auto dictconcat_functor = [&](std::map<std::string, size_t> *dict) {
+    //     std::cout << "the length is:" << res_vector.size() << std::endl;
+    //     res_vector.push_back(dict);
+    // };
 
     tbb::filter_t<void, MarkedString> input{
         tbb::filter::serial_in_order,
@@ -352,45 +558,57 @@ int main(int argc, char const *argv[])
         tbb::filter::parallel,
         ArchiveForwardFilter()};
 
-    tbb::filter_t<std::vector<std::string *>, std::map<std::string, size_t>*> index{
+    tbb::filter_t<std::vector<std::string *>, std::map<std::string, size_t> *> index{
         tbb::filter::parallel,
         IndexerFilter()};
 
-    tbb::filter_t<std::map<std::string, size_t>*, void> output{
+    tbb::filter_t<std::map<std::string, size_t> *, void> output{
         tbb::filter::serial_in_order,
-        OutputFilter(std::cref(dictconcat_functor))};
+        OutputFilter(&res_vector)};
 
     tbb::filter_t<void, void> lifecycle = input & forward_extract & index & output;
     tbb::parallel_pipeline(configs.boundary, lifecycle);
-    std::cout<<"Pipeline done."<<std::endl;
-    auto res = tbb::parallel_reduce(
-        tbb::blocked_range<size_t>(0, res_vector.size()),
-        new std::map<std::string, size_t>,
 
-        [&](tbb::blocked_range<size_t>& r, std::map<std::string, size_t> *cur_res) {
-            for (size_t i = r.begin(); i != r.end(); i++)
-            {
-                for (auto &elem : *(res_vector[i]))
-                {
-                    (*cur_res)[elem.first] += elem.second;
-                    // delete elem.first;
-                }
-                // delete res_vector[i];
-            }
-            return cur_res;
-        },
+    // ------------------------------------------------------------Old paralel_reduce
+    // auto res = tbb::parallel_reduce(
+    //     tbb::blocked_range<size_t>(0, res_vector.size()),
+    //     new std::map<std::string, size_t>,
 
-        [&](std::map<std::string, size_t> *first, std::map<std::string, size_t> *second) {
-            for (auto &elem : *first)
-            {
-                (*second)[elem.first] += elem.second;
-            }
-            // delete first;
-            return second;
-        });
+    //     [&](tbb::blocked_range<size_t> &r, std::map<std::string, size_t> *cur_res) {
+    //         for (size_t i = r.begin(); i != r.end(); i++)
+    //         {
+    //             for (auto &elem : *(res_vector[i]))
+    //             {
+    //                 (*cur_res)[elem.first] += elem.second;
+    //                 // delete elem.first;
+    //             }
+    //             // delete res_vector[i];
+    //         }
+    //         return cur_res;
+    //     },
+
+    //     [&](std::map<std::string, size_t> *first, std::map<std::string, size_t> *second) {
+    //         std::cout<<(first==second)<<std::endl;
+    //         for (auto &elem : *first)
+    //         {
+    //             (*second)[elem.first] += elem.second;
+    //         }
+    //         // delete first;
+    //         return second;
+    //     });
+    // -------------------------------------------------------------------------------------------------------
+
+    Reducer rd(res_vector);
+    tbb::parallel_reduce(tbb::blocked_range<size_t>(0, res_vector.size()), rd);
+
+    auto finish_time = get_current_time_fenced();
+    auto time = finish_time - start_time;
+    std::cout << "Working time: " << to_ms(time)/1000 << " s" << std::endl;
+
+    auto res = rd.res;
 
     // delete &res_vector;
-    std::cout << "---Should have finished parallel_reduce---" << std::endl;
+    // std::cout << "---Should have finished parallel_reduce---" << std::endl;
     std::ofstream outfile;
     std::vector<std::pair<std::string, size_t>> sorted;
     if (!std::filesystem::exists(configs.out_A_path.parent_path()))
@@ -407,7 +625,7 @@ int main(int argc, char const *argv[])
         ++next_it;
         res->erase((*it).first);
     }
-    delete res;
+    // delete res;
     outfile.close();
     outfile.open(configs.out_N_path);
     std::sort(sorted.begin(), sorted.end(), [](const std::pair<std::string, size_t> p1, const std::pair<std::string, size_t> p2) -> bool {
